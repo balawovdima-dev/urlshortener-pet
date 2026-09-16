@@ -1,31 +1,39 @@
-# This workflow will do a clean installation of node dependencies, cache/restore them, build the source code and run tests across different versions of node
-# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-nodejs
+name: CI
 
-name: Node.js CI
-
-on:
-  push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
+on: [push]
 
 jobs:
-  build:
-
+  backend:
     runs-on: ubuntu-latest
-
-    strategy:
-      matrix:
-        node-version: [18.x, 20.x, 22.x]
-        # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
-
     steps:
-    - uses: actions/checkout@v4
-    - name: Use Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ matrix.node-version }}
-        cache: 'npm'
-    - run: npm ci
-    - run: npm run build --if-present
-    - run: npm test
+      - name: Checkout repo
+        uses: actions/checkout@v4
+      - name: Backend tests
+        run: docker compose --profile tools run --rm --build backend-test
+      - name: Cleanup
+        if: always()
+        run: docker compose --profile tools down
+
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+      - name: Frontend tests
+        run: docker compose --profile tools run --rm --build nextjs-test
+      - name: Frontend lint
+        run: docker compose --profile tools run --rm --build nextjs-lint
+      - name: Cleanup
+        if: always()
+        run: docker compose --profile tools down
+
+  build-check:
+    needs: [backend, frontend]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+      - name: Build backend image
+        run: docker build -f backend/Dockerfile -t backend-check ./backend
+      - name: Build frontend image
+        run: docker build -f frontend/Dockerfile -t frontend-check ./frontend
