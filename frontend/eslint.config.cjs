@@ -1,13 +1,10 @@
 const { defineConfig, globalIgnores } = require("eslint/config");
-const { FlatCompat } = require("@eslint/eslintrc");
-
-const compat = new FlatCompat({ baseDirectory: __dirname });
+const nextVitals = require("eslint-config-next/core-web-vitals");
+const nextTs = require("eslint-config-next/typescript");
 
 module.exports = defineConfig([
-  ...compat.extends(
-    "eslint-config-next/core-web-vitals",
-    "eslint-config-next/typescript",
-  ),
+  ...nextVitals,
+  ...nextTs,
   globalIgnores([
     ".next/**",
     "out/**",
