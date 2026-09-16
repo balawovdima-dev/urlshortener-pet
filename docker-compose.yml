@@ -1,0 +1,116 @@
+include:
+  - path: ./infra.yaml
+
+services:
+  # ---------- Backend ----------
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "${APP_PORT:-8000}:8000"
+    environment:
+      - DATABASE_URL=postgresql+psycopg://shortener:shortener@postgres:5432/shortener
+      - REDIS_HOST=${REDIS_HOST:-redis}
+      - REDIS_PORT=${REDIS_PORT:-6379}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    develop:
+      watch:
+        - action: sync+restart
+          path: ./backend
+          target: /usr/app
+        - action: rebuild
+          path: ./backend/requirements.txt
+
+  migrate:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    command: ["alembic", "upgrade", "head"]
+    environment:
+      - DATABASE_URL=postgresql+psycopg://shortener:shortener@postgres:5432/shortener
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # ---------- Frontend: dev (default) ----------
+  nextjs-dev:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    image: nextjs-sample:dev
+    container_name: nextjs-sample-dev
+    ports:
+      - "3000:3000"
+    environment:
+      - WATCHPACK_POLLING=true
+      - BACKEND_INTERNAL_URL=http://backend:8000
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+    depends_on:
+      backend:
+        condition: service_started
+    develop:
+      watch:
+        - action: sync
+          path: ./frontend
+          target: /urlshortener-pet
+          ignore:
+            - node_modules/
+            - .next/
+        - action: rebuild
+          path: ./frontend/package.json
+
+  # ---------- Frontend: prod build (opt-in) ----------
+  nextjs-prod-standalone:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    image: nextjs-sample:prod
+    container_name: nextjs-sample-prod
+    ports:
+      - "3000:3000"
+    environment:
+      - BACKEND_INTERNAL_URL=http://backend:8000
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+    depends_on:
+      backend:
+        condition: service_started
+    profiles:
+      - prod
+
+  # ---------- Frontend: tooling ----------
+  nextjs-test:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    image: nextjs-sample:dev
+    container_name: nextjs-sample-test
+    command:
+      [
+        "sh",
+        "-c",
+        "if [ -f package-lock.json ]; then npm run test:run 2>/dev/null || npm run test -- --run; elif [ -f yarn.lock ]; then yarn test:run 2>/dev/null || yarn test --run; elif [ -f pnpm-lock.yaml ]; then pnpm run test:run; else npm run test -- --run; fi",
+      ]
+    profiles:
+      - tools
+
+  nextjs-lint:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    image: nextjs-sample:dev
+    container_name: nextjs-sample-lint
+    command:
+      [
+        "sh",
+        "-c",
+        "if [ -f package-lock.json ]; then npm run lint; elif [ -f yarn.lock ]; then yarn lint; elif [ -f pnpm-lock.yaml ]; then pnpm lint; else npm run lint; fi",
+      ]
+    profiles:
+      - tools

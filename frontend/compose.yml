@@ -1,0 +1,69 @@
+services:
+  nextjs-prod-standalone:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: nextjs-sample:prod
+    container_name: nextjs-sample-prod
+    ports:
+      - "3000:3000"
+
+  nextjs-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    image: nextjs-sample:dev
+    container_name: nextjs-sample-dev
+    ports:
+      - "3000:3000"
+    environment:
+      - WATCHPACK_POLLING=true
+    develop:
+      watch:
+        - action: sync
+          path: .
+          target: /urlshortener-pet
+          ignore:
+            - node_modules/
+            - .next/
+        - action: rebuild
+          path: package.json
+
+  nextjs-test:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    image: nextjs-sample:dev
+    container_name: nextjs-sample-test
+    command:
+      [
+        "sh",
+        "-c",
+        "if [ -f package-lock.json ]; then npm run test:run 2>/dev/null || npm run test -- --run; elif [ -f yarn.lock ]; then yarn test:run 2>/dev/null || yarn test --run; elif [ -f pnpm-lock.yaml ]; then pnpm run test:run; else npm run test -- --run; fi",
+      ]
+    profiles:
+      - tools
+
+  nextjs-lint:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    image: nextjs-sample:dev
+    container_name: nextjs-sample-lint
+    command:
+      [
+        "sh",
+        "-c",
+        "if [ -f package-lock.json ]; then npm run lint; elif [ -f yarn.lock ]; then yarn lint; elif [ -f pnpm-lock.yaml ]; then pnpm lint; else npm run lint; fi",
+      ]
+    profiles:
+      - tools
+
+# Run the tests
+# docker compose --profile tools run --rm nextjs-test || docker compose --profile tools run --rm nextjs-lint
+# This command will:
+
+# Start the nextjs-test service (because of --profile tools).
+# Run your test script (test:run or test -- --run) in the same environment as development.
+# Remove the container after the tests complete ( docker compose run --rm).
+

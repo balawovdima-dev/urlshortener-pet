@@ -1,0 +1,9 @@
+fastapi==0.141.1
+uvicorn[standard]==0.52.4
+sqlalchemy[asyncio]==2.0.52
+psycopg[binary]==3.3.5
+alembic==1.20.0
+pydantic-settings==2.15.0
+prometheus-fastapi-instrumentator==8.1.0
+gunicorn==26.2.0
+uvicorn-worker==0.4.0
