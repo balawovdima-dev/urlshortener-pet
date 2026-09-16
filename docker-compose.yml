@@ -84,6 +84,41 @@ services:
     profiles:
       - prod
 
+  # ---------- Backend: tests ----------
+  # Throwaway DB: the test suite drops and recreates all tables.
+  postgres-test:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: shortener
+      POSTGRES_PASSWORD: shortener
+      POSTGRES_DB: shortener_test
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U shortener -d shortener_test"]
+      interval: 2s
+      timeout: 3s
+      retries: 15
+    profiles:
+      - tools
+
+  backend-test:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: test
+    environment:
+      - DATABASE_URL=postgresql+psycopg://shortener:shortener@postgres-test:5432/shortener_test
+      - PYTHONDONTWRITEBYTECODE=1
+    volumes:
+      # tests/ is excluded by .dockerignore so it stays out of the prod image
+      - ./backend/tests:/usr/app/tests:ro
+    depends_on:
+      postgres-test:
+        condition: service_healthy
+    profiles:
+      - tools
+
   # ---------- Frontend: tooling ----------
   nextjs-test:
     build:

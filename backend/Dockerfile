@@ -18,6 +18,17 @@ COPY requirements.txt .
 RUN pip install -r requirements.txt
 
 
+FROM build AS test
+
+COPY requirements-dev.txt .
+
+RUN pip install -r requirements-dev.txt
+
+COPY . .
+
+CMD [ "pytest", "-q", "-p", "no:cacheprovider" ]
+
+
 FROM python:3.13-slim@sha256:9d2e5553305c7c7b0097999bb17187c69b921ccd6bc9d40e4bb5ebe652c00285
 
 RUN groupadd -g 999 python && \
