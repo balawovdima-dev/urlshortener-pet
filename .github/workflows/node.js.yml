@@ -38,7 +38,7 @@ jobs:
       - name: Build frontend image
         run: docker build -f frontend/Dockerfile -t frontend-check ./frontend
       - name: Scan backend image
-        uses: aquasecurity/trivy-action@0.36.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: backend-check
           severity: CRITICAL,HIGH
