@@ -99,6 +99,19 @@
   # cached responses are available immediately on startup, uncomment this line:
   # COPY --from=builder --chown=node:node /frontend/.next/cache ./.next/cache
 
+  # Patch OS packages still carrying fixed CVEs in the base image.
+  RUN apt-get update && \
+      apt-get upgrade -y --no-install-recommends && \
+      rm -rf /var/lib/apt/lists/*
+
+  # The standalone server runs `node server.js` and never needs a package
+  # manager. Dropping npm/corepack removes their bundled deps (tar, pacote,
+  # sigstore, minimatch, ...), which are the only source of the node-pkg
+  # findings in this image.
+  RUN rm -rf /usr/local/lib/node_modules/npm \
+             /usr/local/lib/node_modules/corepack \
+             /usr/local/bin/npm /usr/local/bin/npx /usr/local/bin/corepack
+
   # Switch to non-root user for security best practices
   USER node
 
