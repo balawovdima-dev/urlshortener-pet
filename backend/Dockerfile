@@ -41,7 +41,15 @@ WORKDIR /usr/app
 
 COPY --chown=python:python --from=build /usr/app/venv ./venv
 
-RUN rm -rf /usr/local/lib/python3.13/site-packages/pip* /usr/local/lib/python3.13/site-packages/setuptools*
+# Drop pip/setuptools from both the base image and the copied venv: they are not
+# needed at runtime and their vendored deps (e.g. msgpack) trip the trivy scan.
+RUN rm -rf /usr/local/lib/python3.13/site-packages/pip* \
+           /usr/local/lib/python3.13/site-packages/setuptools* \
+           /usr/local/lib/python3.13/site-packages/pkg_resources \
+           ./venv/lib/python3.13/site-packages/pip* \
+           ./venv/lib/python3.13/site-packages/setuptools* \
+           ./venv/lib/python3.13/site-packages/pkg_resources \
+           ./venv/bin/pip*
 
 COPY --chown=python:python . .
 
