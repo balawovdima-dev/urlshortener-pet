@@ -1,0 +1,4 @@
+# GHSA-6v7p-g79w-8964 (msgpack, HIGH) — vendored inside pip's internal
+# _vendor/msgpack, not imported by application code. Upstream pip has not
+# yet updated its vendored copy as of 2026-09-21. Re-check on next pip release.
+GHSA-6v7p-g79w-8964
