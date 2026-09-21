@@ -12,10 +12,6 @@ RUN python -m venv /usr/app/venv
 
 ENV PATH="/usr/app/venv/bin:$PATH"
 
-# Upgrade pip/setuptools to patch known CVEs (path traversal in setuptools <78.1.1,
-# vendored msgpack in older pip) found by Trivy scan
-RUN pip install --upgrade pip setuptools
-
 COPY requirements.txt .
 
 RUN pip install -r requirements.txt
@@ -44,6 +40,8 @@ WORKDIR /usr/app
 
 
 COPY --chown=python:python --from=build /usr/app/venv ./venv
+
+RUN rm -rf /usr/local/lib/python3.13/site-packages/pip* /usr/local/lib/python3.13/site-packages/setuptools*
 
 COPY --chown=python:python . .
 
