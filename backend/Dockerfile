@@ -12,6 +12,9 @@ RUN python -m venv /usr/app/venv
 
 ENV PATH="/usr/app/venv/bin:$PATH"
 
+# Upgrade pip/setuptools to patch known CVEs (path traversal in setuptools <78.1.1,
+# vendored msgpack in older pip) found by Trivy scan
+RUN pip install --upgrade pip setuptools
 
 COPY requirements.txt .
 
@@ -29,7 +32,7 @@ COPY . .
 CMD [ "pytest", "-q", "-p", "no:cacheprovider" ]
 
 
-FROM python:3.13-slim@sha256:9d2e5553305c7c7b0097999bb17187c69b921ccd6bc9d40e4bb5ebe652c00285
+FROM python:3.13-slim@sha256:8d9d0b8bcf6506481eae4907c18f5e3e7902e629f5f6d684f9e7c32e85e3ddf0
 
 RUN groupadd -g 999 python && \
     useradd -r -m -u 999 -g python python
