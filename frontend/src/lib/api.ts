@@ -1,4 +1,4 @@
-import { getApiUrl } from "./config";
+import { API_URL } from "./config";
 
 export interface Link {
   code: string;
@@ -83,10 +83,9 @@ async function toApiError(res: Response): Promise<ApiError> {
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const apiUrl = await getApiUrl();
   let res: Response;
   try {
-    res = await fetch(`${apiUrl}${path}`, {
+    res = await fetch(`${API_URL}${path}`, {
       ...init,
       headers: { Accept: "application/json", ...init?.headers },
       cache: "no-store",
@@ -94,7 +93,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   } catch {
     throw new ApiError(
       0,
-      `Could not reach the API at ${apiUrl}. Is the backend running?`,
+      `Could not reach the API at ${API_URL || "this origin"}. Is the backend running?`,
     );
   }
 
