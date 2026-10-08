@@ -14,6 +14,9 @@ class Settings(BaseSettings):
     code_length: int = 7
     # Injected at build/deploy time so /healthz shows what's running
     app_version: str = "dev"
+    # Fault injection for testing alerts: this share of requests (0..1) gets a
+    # 500. Never set in prod; probes and /metrics are never affected.
+    chaos_error_rate: float = 0.0
 
 
 settings = Settings()
