@@ -1,3 +1,6 @@
+from app.config import settings
+
+
 def test_healthz(client):
     r = client.get("/healthz")
     assert r.status_code == 200
@@ -52,3 +55,25 @@ def test_metrics(client):
     r = client.get("/metrics")
     assert r.status_code == 200
     assert "shortener_links_created_total" in r.text
+
+
+def test_probes_not_in_metrics(client):
+    client.get("/healthz")
+    client.get("/readyz")
+    text = client.get("/metrics").text
+    assert 'handler="/healthz"' not in text
+    assert 'handler="/readyz"' not in text
+
+
+def test_chaos_injects_500s_but_spares_probes(client, monkeypatch):
+    monkeypatch.setattr(settings, "chaos_error_rate", 1.0)
+    r = client.get("/api/links/whatever")
+    assert r.status_code == 500
+    assert client.get("/healthz").status_code == 200
+    assert client.get("/metrics").status_code == 200
+    assert 'status="5xx"' in client.get("/metrics").text
+
+
+def test_chaos_off_by_default(client):
+    assert settings.chaos_error_rate == 0.0
+    assert client.get("/api/links/nope123").status_code == 404

@@ -59,10 +59,13 @@ USER 999
 
 ENV PATH="/usr/app/venv/bin:$PATH"
 
+# gunicorn runs several workers: they share metrics through files here (see gunicorn.conf.py)
+ENV PROMETHEUS_MULTIPROC_DIR=/tmp/prometheus
+
 EXPOSE 8000
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
   CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/healthz', timeout=3)" || exit 1
 
 # ASGI: gunicorn manages processes, uvicorn workers run the async app
-CMD [ "gunicorn", "app.main:app", "-k", "uvicorn_worker.UvicornWorker", "--bind", "0.0.0.0:8000", "--workers", "2" ]
+CMD [ "gunicorn", "app.main:app", "--config", "gunicorn.conf.py", "-k", "uvicorn_worker.UvicornWorker", "--bind", "0.0.0.0:8000", "--workers", "2" ]
